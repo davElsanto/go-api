@@ -38,6 +38,7 @@ func main() {
 
 	router.HandleFunc("/books", getBooks).Methods("GET")
 	router.HandleFunc("/books/{id}", getBook).Methods("GET")
+	router.HandleFunc("/books", addBook).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
@@ -51,7 +52,14 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(params["id"])
 	for _, book := range books {
 		if book.ID == id {
-			json.NewEncoder(w).Encode(book)
+			json.NewEncoder(w).Encode(&book)
 		}
 	}
+}
+
+func addBook(w http.ResponseWriter, r *http.Request) {
+	var book Book
+	_ = json.NewDecoder(r.Body).Decode(&book)
+	books = append(books, book)
+	json.NewEncoder(w).Encode(books)
 }
