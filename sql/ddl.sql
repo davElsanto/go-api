@@ -1,0 +1,1 @@
+create table books (id serial, title varchar, author varchar, year varchar)
