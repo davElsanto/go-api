@@ -46,9 +46,9 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/books", getBooks).Methods("GET")
-	router.HandleFunc("/books/{id}", getBook).Methods("GET")
 	router.HandleFunc("/books", addBook).Methods("POST")
 	router.HandleFunc("/books", updateBook).Methods("PUT")
+	router.HandleFunc("/books/{id}", getBook).Methods("GET")
 	router.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":8000", router))
@@ -60,12 +60,12 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 
 	sqlQuery := "select * from books"
 
-	row, errorPsql := db.Query(sqlQuery)
-	logFatal(errorPsql)
+	row, errorSql := db.Query(sqlQuery)
+	logFatal(errorSql)
 
 	for row.Next() {
-		errorPsql := row.Scan(&bookItem.ID, &bookItem.Title, &bookItem.Author, &bookItem.Year)
-		logFatal(errorPsql)
+		errorSql := row.Scan(&bookItem.ID, &bookItem.Title, &bookItem.Author, &bookItem.Year)
+		logFatal(errorSql)
 		books = append(books, bookItem)
 	}
 
@@ -76,13 +76,59 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBook(w http.ResponseWriter, r *http.Request) {
+	var book Book
+	params := mux.Vars(r)
+	sqlQuery := "select * from books where id = $1"
+
+	row := db.QueryRow(sqlQuery, params["id"])
+
+	errorSql := row.Scan(&book.ID, &book.Title, &book.Author, &book.Year)
+	logFatal(errorSql)
+
+	json.NewEncoder(w).Encode(book)
+
 }
 
 func addBook(w http.ResponseWriter, r *http.Request) {
+	var book Book
+
+	json.NewDecoder(r.Body).Decode(&book)
+
+	sqlQuery := "insert into books (title, author, year) values ($1, $2, $3) RETURNING id;"
+
+	errorSql := db.QueryRow(sqlQuery, &book.Title, &book.Author, &book.Year).Scan(&book.ID)
+	logFatal(errorSql)
+
+	json.NewEncoder(w).Encode(book)
 }
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
+	var book Book
+
+	sqlQuery := "update books set title=$1, author=$2, year=$3 where id=$4;"
+
+	json.NewDecoder(r.Body).Decode(&book)
+
+	row, errorSql := db.Exec(sqlQuery, &book.Title, &book.Author, &book.Year, &book.ID)
+	logFatal(errorSql)
+
+	_, errorSql = row.RowsAffected()
+	logFatal(errorSql)
+
+	json.NewEncoder(w).Encode(&book)
+
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	sqlQuery := "delete from books where id = $1"
+
+	row, errorSql := db.Exec(sqlQuery, params["id"])
+	logFatal(errorSql)
+
+	_, errorSql = row.RowsAffected()
+	logFatal(errorSql)
+
+	json.NewEncoder(w).Encode("deleted")
 }
