@@ -7,19 +7,14 @@ import (
 	"net/http"
 	"os"
 
+	"./models"
+
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	"github.com/subosito/gotenv"
 )
 
-type Book struct {
-	ID     int    `json:id`
-	Title  string `json:title`
-	Author string `json:author`
-	Year   string `json:year`
-}
-
-var books []Book
+var books []models.Book
 var db *sql.DB
 
 func init() {
@@ -55,8 +50,8 @@ func main() {
 }
 
 func getBooks(w http.ResponseWriter, r *http.Request) {
-	var bookItem Book
-	books = []Book{}
+	var bookItem models.Book
+	books = []models.Book{}
 
 	sqlQuery := "select * from books"
 
@@ -76,7 +71,7 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBook(w http.ResponseWriter, r *http.Request) {
-	var book Book
+	var book models.Book
 	params := mux.Vars(r)
 	sqlQuery := "select * from books where id = $1"
 
@@ -90,7 +85,7 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func addBook(w http.ResponseWriter, r *http.Request) {
-	var book Book
+	var book models.Book
 
 	json.NewDecoder(r.Body).Decode(&book)
 
@@ -103,7 +98,7 @@ func addBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
-	var book Book
+	var book models.Book
 
 	sqlQuery := "update books set title=$1, author=$2, year=$3 where id=$4;"
 
